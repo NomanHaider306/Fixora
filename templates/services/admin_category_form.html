@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Admin Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card card-fx border-0 p-4 p-md-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+          <div>
+            <h3 class="fw-bold mb-1">{{ title }}</h3>
+            <p class="text-muted small mb-0">Configure category name, icon, image, and active status.</p>
+          </div>
+          <a href="{% url 'services:category_list_admin' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Categories
+          </a>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Category Name <span class="text-danger">*</span></label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+              <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Bootstrap Icon Class</label>
+              {{ form.icon_class }}
+              <small class="text-muted d-block mt-1">
+                Examples: <code>bi-lightning-charge</code>, <code>bi-wrench</code>, <code>bi-brush</code>, <code>bi-hammer</code>, <code>bi-gear</code>
+              </small>
+              {% if form.icon_class.errors %}
+                <div class="text-danger small mt-1">{{ form.icon_class.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Category Image (Optional)</label>
+              {{ form.image }}
+              {% if form.image.errors %}
+                <div class="text-danger small mt-1">{{ form.image.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="form-check form-switch mb-4">
+            {{ form.is_active }}
+            <label class="form-check-label fw-semibold small" for="{{ form.is_active.id_for_label }}">
+              Active (Visible to customers on the marketplace)
+            </label>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+            <a href="{% url 'services:category_list_admin' %}" class="btn btn-light px-4">Cancel</a>
+            <button type="submit" class="btn btn-fixora px-4">
+              <i class="bi bi-check-lg me-1"></i> Save Category
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

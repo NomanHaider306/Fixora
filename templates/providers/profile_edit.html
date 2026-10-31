@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Professional Profile - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+      <div class="card card-fx border-0 p-3 mb-3">
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 border-bottom">
+          {% if profile.profile_picture %}
+            <img src="{{ profile.profile_picture.url }}" alt="{{ profile.display_name }}" class="rounded-circle object-fit-cover" style="width: 50px; height: 50px;">
+          {% else %}
+            <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-weight: 700; font-size: 1.3rem;">
+              {{ profile.display_name|slice:":1"|upper }}
+            </div>
+          {% endif %}
+          <div class="text-truncate">
+            <h6 class="fw-bold mb-0 text-truncate">{{ profile.display_name }}</h6>
+            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
+            <span class="badge bg-success-subtle text-success border mt-1">Provider</span>
+          </div>
+        </div>
+
+        <nav class="nav flex-column">
+          <a class="sidebar-nav-item" href="{% url 'accounts:provider_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard Overview
+          </a>
+          <a class="sidebar-nav-item active" href="{% url 'providers:profile_edit' %}">
+            <i class="bi bi-person-badge"></i> Edit Profile & Skills
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:portfolio_manage' %}">
+            <i class="bi bi-images"></i> Work Portfolio
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:document_submission' %}">
+            <i class="bi bi-shield-check"></i> Identity Documents
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'availability:weekly_schedule_manage' %}">
+            <i class="bi bi-clock"></i> Weekly Hours
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'availability:blocked_dates_manage' %}">
+            <i class="bi bi-calendar-x"></i> Block Dates
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'estimates:provider_list' %}">
+            <i class="bi bi-inbox"></i> Incoming Requests
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:public_profile' profile.pk %}" target="_blank">
+            <i class="bi bi-globe"></i> View Public Profile <i class="bi bi-box-arrow-up-right ms-auto text-muted small"></i>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Profile Edit Form -->
+    <div class="col-lg-9">
+      <div class="card card-fx border-0 p-4 p-md-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+          <div>
+            <h3 class="fw-bold mb-1">Professional Profile</h3>
+            <p class="text-muted small mb-0">Showcase your trade skills, service areas, and pricing to prospective customers.</p>
+          </div>
+          <a href="{% url 'providers:public_profile' profile.pk %}" target="_blank" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-eye me-1"></i> Public Preview
+          </a>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+
+          <!-- Basic Business Details -->
+          <h5 class="fw-bold text-secondary mb-3">1. Business Identity</h5>
+          <div class="row g-3 mb-4">
+            <div class="col-md-7">
+              <label class="form-label fw-semibold small">Business or Trade Name</label>
+              {{ form.business_name }}
+              {% if form.business_name.errors %}
+                <div class="text-danger small mt-1">{{ form.business_name.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-5">
+              <label class="form-label fw-semibold small">Profile Picture</label>
+              {{ form.profile_picture }}
+              {% if form.profile_picture.errors %}
+                <div class="text-danger small mt-1">{{ form.profile_picture.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold small">Professional Introduction / Bio</label>
+            {{ form.introduction }}
+            {% if form.introduction.errors %}
+              <div class="text-danger small mt-1">{{ form.introduction.errors.0 }}</div>
+            {% endif %}
+            <small class="text-muted">Explain what sets your service apart, certifications, warranty, and customer satisfaction record.</small>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-8">
+              <label class="form-label fw-semibold small">Core Skills</label>
+              {{ form.skills }}
+              {% if form.skills.errors %}
+                <div class="text-danger small mt-1">{{ form.skills.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Years of Experience</label>
+              {{ form.experience_years }}
+              {% if form.experience_years.errors %}
+                <div class="text-danger small mt-1">{{ form.experience_years.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- US07: Service Categories Selection -->
+          <h5 class="fw-bold text-secondary mb-3 pt-3 border-top">2. Service Categories (US07)</h5>
+          <p class="text-muted small mb-3">Select all service trades that match your work. You will appear in customer searches for these categories.</p>
+          <div class="p-3 bg-light rounded-3 mb-4 border">
+            <div class="row g-2">
+              {% for checkbox in form.categories %}
+                <div class="col-sm-6 col-md-4">
+                  <div class="form-check p-2 bg-white rounded border">
+                    {{ checkbox.tag }}
+                    <label class="form-check-label small fw-semibold ms-1" for="{{ checkbox.id_for_label }}">
+                      {{ checkbox.choice_label }}
+                    </label>
+                  </div>
+                </div>
+              {% empty %}
+                <p class="text-muted small mb-0">No active categories available. Please check back later.</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Location & Rates -->
+          <h5 class="fw-bold text-secondary mb-3 pt-3 border-top">3. Service Area & Rates</h5>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">City / Primary Base</label>
+              {{ form.city }}
+              {% if form.city.errors %}
+                <div class="text-danger small mt-1">{{ form.city.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Coverage Area</label>
+              {{ form.service_area }}
+              {% if form.service_area.errors %}
+                <div class="text-danger small mt-1">{{ form.service_area.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Hourly Rate (PKR)</label>
+              <div class="input-group">
+                <span class="input-group-text">PKR</span>
+                {{ form.hourly_rate }}
+                <span class="input-group-text">/ hr</span>
+              </div>
+              {% if form.hourly_rate.errors %}
+                <div class="text-danger small mt-1">{{ form.hourly_rate.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Starting Price (PKR)</label>
+              <div class="input-group">
+                <span class="input-group-text">PKR</span>
+                {{ form.starting_price }}
+              </div>
+              {% if form.starting_price.errors %}
+                <div class="text-danger small mt-1">{{ form.starting_price.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Online Availability Toggle -->
+          <div class="p-3 bg-light rounded-3 mb-4 border">
+            <div class="form-check form-switch mb-0">
+              {{ form.is_online }}
+              <label class="form-check-label fw-semibold small ms-2" for="{{ form.is_online.id_for_label }}">
+                Online & Accepting New Client Inquiries
+              </label>
+              <small class="text-muted d-block ms-4">Uncheck when on vacation or when schedule is fully booked.</small>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+            <a href="{% url 'accounts:provider_dashboard' %}" class="btn btn-light px-4">Cancel</a>
+            <button type="submit" class="btn btn-fixora px-4">
+              <i class="bi bi-check-lg me-1"></i> Save Profile
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Identity Document Verification - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+      <div class="card card-fx border-0 p-3 mb-3">
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 border-bottom">
+          <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.25rem;">
+            {{ profile.display_name|slice:":1"|upper }}
+          </div>
+          <div class="text-truncate">
+            <h6 class="fw-bold mb-0 text-truncate">{{ profile.display_name }}</h6>
+            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
+            <span class="badge bg-success-subtle text-success border mt-1">Provider</span>
+          </div>
+        </div>
+
+        <nav class="nav flex-column">
+          <a class="sidebar-nav-item" href="{% url 'accounts:provider_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard Overview
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:profile_edit' %}">
+            <i class="bi bi-person-badge"></i> Edit Profile & Skills
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:portfolio_manage' %}">
+            <i class="bi bi-images"></i> Work Portfolio
+          </a>
+          <a class="sidebar-nav-item active" href="{% url 'providers:document_submission' %}">
+            <i class="bi bi-shield-check"></i> Identity Documents
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'availability:weekly_schedule_manage' %}">
+            <i class="bi bi-clock"></i> Weekly Hours
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'availability:blocked_dates_manage' %}">
+            <i class="bi bi-calendar-x"></i> Block Dates
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'estimates:provider_list' %}">
+            <i class="bi bi-inbox"></i> Incoming Requests
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <div class="card card-fx border-0 p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h4 class="fw-bold mb-1">Identity Verification Submission (US09)</h4>
+            <p class="text-muted small mb-0">Submit government ID or trade licenses to qualify for the Fixora Verified Pro badge.</p>
+          </div>
+          {% if profile.is_verified %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-bold">
+              <i class="bi bi-patch-check-fill me-1"></i> Verified Pro
+            </span>
+          {% else %}
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill fw-bold">
+              <i class="bi bi-hourglass-split me-1"></i> Pending Verification
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Privacy & Security Notice -->
+        <div class="alert alert-info border-0 d-flex align-items-start gap-2 mb-4">
+          <i class="bi bi-shield-lock-fill fs-5 mt-1"></i>
+          <small>
+            <strong>Your privacy is protected:</strong> Submitted identity documents are stored securely and encrypted in our backend. They are strictly confidential and are NEVER displayed on your public profile or exposed to clients.
+          </small>
+        </div>
+
+        <!-- Document Upload Form -->
+        <form method="post" enctype="multipart/form-data" novalidate class="p-3 bg-light rounded-3 border mb-4">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Document Type <span class="text-danger">*</span></label>
+              {{ form.document_type }}
+              {% if form.document_type.errors %}
+                <div class="text-danger small mt-1">{{ form.document_type.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Upload File (PDF, JPG, PNG) <span class="text-danger">*</span></label>
+              {{ form.document_file }}
+              {% if form.document_file.errors %}
+                <div class="text-danger small mt-1">{{ form.document_file.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Notes / Document Number</label>
+              {{ form.notes }}
+              {% if form.notes.errors %}
+                <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-fixora">
+              <i class="bi bi-file-earmark-arrow-up me-1"></i> Submit Document for Review
+            </button>
+          </div>
+        </form>
+
+        <!-- Submitted Documents History -->
+        <h5 class="fw-bold mb-3">Submitted Documents ({{ documents.count }})</h5>
+        {% if documents %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light small">
+                <tr>
+                  <th>Document Type</th>
+                  <th>Notes</th>
+                  <th>Submitted Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for doc in documents %}
+                  <tr>
+                    <td>
+                      <i class="bi bi-file-earmark-lock me-2 text-primary"></i>
+                      <strong>{{ doc.get_document_type_display }}</strong>
+                    </td>
+                    <td>{{ doc.notes|default:"&mdash;" }}</td>
+                    <td class="small text-muted">{{ doc.submitted_at|date:"M d, Y H:i" }}</td>
+                    <td>
+                      {% if doc.status == 'verified' %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                          <i class="bi bi-check-circle me-1"></i> Verified
+                        </span>
+                      {% elif doc.status == 'rejected' %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                          <i class="bi bi-x-circle me-1"></i> Rejected
+                        </span>
+                      {% else %}
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                          <i class="bi bi-clock me-1"></i> Under Review
+                        </span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-center py-4 bg-light rounded-3">
+            <i class="bi bi-file-earmark-lock text-muted fs-2"></i>
+            <p class="text-muted small mt-2 mb-0">No verification documents submitted yet.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

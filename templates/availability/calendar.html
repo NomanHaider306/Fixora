@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Availability Calendar for {{ provider.display_name }} - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill mb-1">Live Availability (US17)</span>
+      <h2 class="fw-bold mb-0">{{ provider.display_name }}'s Available Slots</h2>
+      <p class="text-muted small mb-0">Select an upcoming date to see available 1-hour appointment slots.</p>
+    </div>
+    <a href="{% url 'providers:public_profile' provider.pk %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to Profile
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left: Schedule Summary -->
+    <div class="col-lg-4">
+      <div class="card card-fx border-0 p-4 mb-4">
+        <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
+          {% if provider.profile_picture %}
+            <img src="{{ provider.profile_picture.url }}" alt="{{ provider.display_name }}" class="rounded-circle object-fit-cover" style="width: 56px; height: 56px;">
+          {% else %}
+            <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; font-weight: 700; font-size: 1.4rem;">
+              {{ provider.display_name|slice:":1"|upper }}
+            </div>
+          {% endif %}
+          <div>
+            <h5 class="fw-bold mb-0 text-dark">{{ provider.display_name }}</h5>
+            <small class="text-muted">{{ provider.city|default:"Location upon request" }}</small>
+            <div>
+              {% if provider.is_online %}
+                <span class="badge badge-online mt-1">Accepting Inquiries</span>
+              {% else %}
+                <span class="badge badge-offline mt-1">Currently Offline</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <h6 class="fw-bold text-secondary mb-3">Weekly Working Hours</h6>
+        <ul class="list-group list-group-flush small mb-3">
+          {% for d in days_data %}
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+              <span class="fw-semibold">{{ d.day_name }}</span>
+              {% if d.is_working and d.start_time %}
+                <span class="text-dark">{{ d.start_time }} &ndash; {{ d.end_time }}</span>
+              {% else %}
+                <span class="text-muted">Unavailable</span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+
+        <div class="alert alert-light border small text-muted mb-0">
+          <i class="bi bi-info-circle text-primary me-1"></i>
+          Slots are automatically calculated based on working hours, excluding vacation/blocked dates.
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Date Selector & Live Slots -->
+    <div class="col-lg-8">
+      <div class="card card-fx border-0 p-4 p-md-5">
+        <h4 class="fw-bold mb-3">Choose a Date to Check Slots</h4>
+
+        <!-- Date Picker Input -->
+        <div class="row g-3 align-items-end mb-4">
+          <div class="col-sm-8">
+            <label class="form-label fw-semibold small">Date of Service</label>
+            <input type="date" id="datePicker" class="form-control" min="{{ min_date }}" max="{{ max_date }}" value="{{ min_date }}">
+          </div>
+          <div class="col-sm-4">
+            <button type="button" class="btn btn-fixora w-100" id="checkSlotsBtn">
+              <i class="bi bi-clock me-1"></i> Check Slots
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic Results Container -->
+        <div id="slotsResultArea" class="p-4 bg-light rounded-3 border">
+          <div class="text-center py-4" id="slotsLoading">
+            <div class="spinner-border text-success" role="status"></div>
+            <p class="small text-muted mt-2 mb-0">Fetching available time slots from server...</p>
+          </div>
+
+          <div id="slotsContent" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h5 class="fw-bold mb-0" id="slotResultDate">Available Slots</h5>
+                <small class="text-muted" id="slotWorkingHours"></small>
+              </div>
+              <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill" id="slotCountBadge"></span>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mb-4" id="slotsBadges"></div>
+
+            <!-- Action Prompt -->
+            {% if user.is_authenticated and user.is_customer %}
+              <div class="p-3 bg-white rounded border d-flex justify-content-between align-items-center">
+                <div>
+                  <strong class="d-block small">Need one of these time slots?</strong>
+                  <span class="text-muted small">Submit a price estimate request specifying your chosen date.</span>
+                </div>
+                <a href="{% url 'estimates:request_create' provider.pk %}" class="btn btn-fixora btn-sm text-nowrap" id="requestEstimateLink">
+                  Request Estimate &rarr;
+                </a>
+              </div>
+            {% endif %}
+          </div>
+
+          <div id="slotsError" style="display: none;" class="text-center py-4">
+            <i class="bi bi-calendar-x text-warning" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold mt-2" id="errorTitle">Unavailable</h5>
+            <p class="text-muted small mb-0" id="errorMessage"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const datePicker = document.getElementById('datePicker');
+  const checkBtn = document.getElementById('checkSlotsBtn');
+  const loading = document.getElementById('slotsLoading');
+  const content = document.getElementById('slotsContent');
+  const errorBox = document.getElementById('slotsError');
+  const slotResultDate = document.getElementById('slotResultDate');
+  const slotWorkingHours = document.getElementById('slotWorkingHours');
+  const slotCountBadge = document.getElementById('slotCountBadge');
+  const slotsBadges = document.getElementById('slotsBadges');
+  const errorTitle = document.getElementById('errorTitle');
+  const errorMessage = document.getElementById('errorMessage');
+
+  function fetchSlots(dateVal) {
+    if (!dateVal) return;
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    errorBox.style.display = 'none';
+
+    fetch(`/availability/slots/{{ provider.pk }}/?date=${dateVal}`)
+      .then(response => response.json())
+      .then(data => {
+        loading.style.display = 'none';
+        if (data.available && data.slots.length > 0) {
+          content.style.display = 'block';
+          errorBox.style.display = 'none';
+
+          slotResultDate.textContent = `${data.day_name}, ${data.date}`;
+          slotWorkingHours.textContent = `Operating hours: ${data.working_hours}`;
+          slotCountBadge.textContent = `${data.slots.length} Slots Open`;
+
+          slotsBadges.innerHTML = '';
+          data.slots.forEach(s => {
+            const span = document.createElement('span');
+            span.className = 'slot-badge';
+            span.innerHTML = `<i class="bi bi-clock me-1 text-success"></i> ${s.display}`;
+            slotsBadges.appendChild(span);
+          });
+        } else {
+          content.style.display = 'none';
+          errorBox.style.display = 'block';
+          errorTitle.textContent = data.status === 'offline' ? 'Provider Offline' : 'No Open Slots';
+          errorMessage.textContent = data.message || 'The provider has no available slots on this date.';
+        }
+      })
+      .catch(err => {
+        loading.style.display = 'none';
+        content.style.display = 'none';
+        errorBox.style.display = 'block';
+        errorTitle.textContent = 'Connection Error';
+        errorMessage.textContent = 'Could not retrieve schedule slots. Please try again.';
+      });
+  }
+
+  checkBtn.addEventListener('click', function() {
+    fetchSlots(datePicker.value);
+  });
+
+  datePicker.addEventListener('change', function() {
+    fetchSlots(this.value);
+  });
+
+  // Initial load for default date
+  fetchSlots(datePicker.value);
+});
+</script>
+{% endblock %}
+

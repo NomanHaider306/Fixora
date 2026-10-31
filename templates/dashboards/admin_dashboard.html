@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Administrator Dashboard - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+      <div class="card card-fx border-0 p-3 mb-3">
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 border-bottom">
+          <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.3rem;">
+            <i class="bi bi-shield-lock"></i>
+          </div>
+          <div class="text-truncate">
+            <h6 class="fw-bold mb-0 text-truncate">{{ user.get_full_name|default:user.username }}</h6>
+            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
+            <span class="badge bg-danger-subtle text-danger border mt-1">Platform Admin</span>
+          </div>
+        </div>
+
+        <nav class="nav flex-column">
+          <a class="sidebar-nav-item active" href="{% url 'accounts:admin_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Platform Overview
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'services:category_list_admin' %}">
+            <i class="bi bi-folder"></i> Service Categories
+            <span class="badge bg-light text-secondary border ms-auto">{{ total_categories }}</span>
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'services:category_create_admin' %}">
+            <i class="bi bi-plus-circle"></i> Add New Category
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'discovery:search' %}">
+            <i class="bi bi-people"></i> Browse All Pros
+          </a>
+          <a class="sidebar-nav-item" href="/django-admin/" target="_blank">
+            <i class="bi bi-sliders"></i> Django Admin Site <i class="bi bi-box-arrow-up-right ms-auto text-muted small"></i>
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'accounts:account_settings' %}">
+            <i class="bi bi-gear"></i> Account Settings
+          </a>
+        </nav>
+      </div>
+
+      <!-- Admin Notice -->
+      <div class="card card-fx border-0 bg-light p-3">
+        <h6 class="fw-bold mb-1"><i class="bi bi-info-circle text-primary me-1"></i> System Information</h6>
+        <p class="small text-muted mb-0">
+          Database: <strong>SQLite (db.sqlite3)</strong><br>
+          Backend: <strong>Django 6.1.2</strong><br>
+          Architecture: <strong>MVT</strong>
+        </p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <!-- Header Banner -->
+      <div class="card card-fx border-0 p-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div>
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill mb-2">
+              Fixora Administration
+            </span>
+            <h3 class="fw-bold mb-1">Marketplace Overview</h3>
+            <p class="text-muted small mb-0">Monitor service categories, registered users, and marketplace activity.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'services:category_create_admin' %}" class="btn btn-fixora">
+              <i class="bi bi-plus-lg me-1"></i> Add Service Category
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-4 col-xl-2">
+          <div class="stat-card">
+            <span class="text-muted small fw-semibold d-block mb-1">Users</span>
+            <h3 class="fw-bold mb-0 text-dark">{{ total_users }}</h3>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-4 col-xl-2">
+          <div class="stat-card">
+            <span class="text-muted small fw-semibold d-block mb-1">Customers</span>
+            <h3 class="fw-bold mb-0 text-primary">{{ total_customers }}</h3>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-4 col-xl-2">
+          <div class="stat-card">
+            <span class="text-muted small fw-semibold d-block mb-1">Providers</span>
+            <h3 class="fw-bold mb-0 text-success">{{ total_providers }}</h3>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-4 col-xl-3">
+          <div class="stat-card">
+            <span class="text-muted small fw-semibold d-block mb-1">Service Categories</span>
+            <h3 class="fw-bold mb-0 text-info">{{ total_categories }}</h3>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-4 col-xl-3">
+          <div class="stat-card">
+            <span class="text-muted small fw-semibold d-block mb-1">Estimates</span>
+            <h3 class="fw-bold mb-0 text-warning">{{ total_estimates }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Service Categories Quick Table (US41) -->
+      <div class="card card-fx border-0 p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Active Service Catalog</h5>
+          <a href="{% url 'services:category_list_admin' %}" class="small text-success fw-bold text-decoration-none">
+            Manage All Categories &rarr;
+          </a>
+        </div>
+
+        {% if categories %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light small">
+                <tr>
+                  <th>Category</th>
+                  <th>Icon</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for cat in categories|slice:":6" %}
+                  <tr>
+                    <td>
+                      <strong class="d-block">{{ cat.name }}</strong>
+                      <small class="text-muted text-truncate d-block" style="max-width: 250px;">{{ cat.description }}</small>
+                    </td>
+                    <td>
+                      <span class="badge bg-light text-secondary border fs-6">
+                        <i class="bi {{ cat.icon_class }}"></i>
+                      </span>
+                    </td>
+                    <td>
+                      {% if cat.is_active %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                      {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <a href="{% url 'services:category_update_admin' cat.pk %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-center py-4 bg-light rounded-3">
+            <p class="text-muted small mb-2">No service categories created yet.</p>
+            <a href="{% url 'services:category_create_admin' %}" class="btn btn-fixora btn-sm">Add First Category</a>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Recent Providers Table -->
+      <div class="card card-fx border-0 p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Registered Service Providers</h5>
+          <a href="{% url 'discovery:search' %}" class="small text-success fw-bold text-decoration-none">
+            Browse Marketplace &rarr;
+          </a>
+        </div>
+
+        {% if recent_providers %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light small">
+                <tr>
+                  <th>Provider</th>
+                  <th>Location</th>
+                  <th>Rate</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in recent_providers %}
+                  <tr>
+                    <td>
+                      <strong class="d-block">{{ p.display_name }}</strong>
+                      <small class="text-muted">{{ p.user.email }}</small>
+                    </td>
+                    <td>{{ p.city|default:"Not specified" }}</td>
+                    <td>PKR {{ p.hourly_rate }}/hr</td>
+                    <td>
+                      {% if p.is_online %}
+                        <span class="badge badge-online">Online</span>
+                      {% else %}
+                        <span class="badge badge-offline">Offline</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <a href="{% url 'providers:public_profile' p.pk %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                        View Profile
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">No service providers registered yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Incoming Estimate Requests - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+      <div class="card card-fx border-0 p-3 mb-3">
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 border-bottom">
+          <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.25rem;">
+            {{ profile.display_name|slice:":1"|upper }}
+          </div>
+          <div class="text-truncate">
+            <h6 class="fw-bold mb-0 text-truncate">{{ profile.display_name }}</h6>
+            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
+            <span class="badge bg-success-subtle text-success border mt-1">Provider</span>
+          </div>
+        </div>
+
+        <nav class="nav flex-column">
+          <a class="sidebar-nav-item" href="{% url 'accounts:provider_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard Overview
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:profile_edit' %}">
+            <i class="bi bi-person-badge"></i> Edit Profile & Skills
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:portfolio_manage' %}">
+            <i class="bi bi-images"></i> Work Portfolio
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:document_submission' %}">
+            <i class="bi bi-shield-check"></i> Identity Documents
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'availability:weekly_schedule_manage' %}">
+            <i class="bi bi-clock"></i> Weekly Hours
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'availability:blocked_dates_manage' %}">
+            <i class="bi bi-calendar-x"></i> Block Dates
+          </a>
+          <a class="sidebar-nav-item active" href="{% url 'estimates:provider_list' %}">
+            <i class="bi bi-inbox"></i> Incoming Requests
+            <span class="badge bg-success text-white ms-auto">{{ estimates.count }}</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <div class="card card-fx border-0 p-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div>
+            <h3 class="fw-bold mb-1">Incoming Price Estimate Requests (US24)</h3>
+            <p class="text-muted small mb-0">Review client inquiries, examine job requirements, and submit preliminary price estimates.</p>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+          <a href="{% url 'estimates:provider_list' %}" class="btn btn-sm {% if not status_filter %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            All ({{ estimates.count }})
+          </a>
+          <a href="{% url 'estimates:provider_list' %}?status=pending" class="btn btn-sm {% if status_filter == 'pending' %}btn-warning text-dark{% else %}btn-outline-secondary{% endif %}">
+            Pending Quotes
+          </a>
+          <a href="{% url 'estimates:provider_list' %}?status=responded" class="btn btn-sm {% if status_filter == 'responded' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+            Responded
+          </a>
+          <a href="{% url 'estimates:provider_list' %}?status=cancelled" class="btn btn-sm {% if status_filter == 'cancelled' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+            Cancelled
+          </a>
+        </div>
+      </div>
+
+      <!-- Requests Cards -->
+      {% if estimates %}
+        <div class="d-flex flex-column gap-3">
+          {% for est in estimates %}
+            <div class="card card-fx border-0 p-4">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                  <span class="badge bg-light text-secondary border mb-1">
+                    {{ est.service_category.name|default:"General Service" }}
+                  </span>
+                  <h5 class="fw-bold mb-0">
+                    <a href="{% url 'estimates:detail' est.pk %}" class="text-dark text-decoration-none">
+                      {{ est.title }}
+                    </a>
+                  </h5>
+                  <small class="text-muted">
+                    Client: <strong>{{ est.customer.get_full_name|default:est.customer.email }}</strong> &bull;
+                    Preferred Date: <strong>{{ est.preferred_date|default:"Flexible" }}</strong> &bull;
+                    Received: {{ est.created_at|date:"M d, Y H:i" }}
+                  </small>
+                </div>
+
+                <!-- Status Badge -->
+                <div>
+                  {% if est.status == 'pending' %}
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle py-2 px-3 rounded-pill fw-semibold">
+                      <i class="bi bi-hourglass-split me-1"></i> Awaiting Your Price Quote
+                    </span>
+                  {% elif est.status == 'responded' %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle py-2 px-3 rounded-pill fw-semibold">
+                      <i class="bi bi-check-circle-fill me-1"></i> Quote Sent (PKR {{ est.response.estimated_price }})
+                    </span>
+                  {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary py-2 px-3 rounded-pill">
+                      Cancelled
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <p class="text-secondary small mb-3">
+                {{ est.description }}
+              </p>
+
+              {% if est.job_address %}
+                <div class="small text-muted mb-3">
+                  <i class="bi bi-geo-alt me-1 text-danger"></i> Location: <strong>{{ est.job_address }}</strong>
+                </div>
+              {% endif %}
+
+              <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <small class="text-muted">
+                  Client email: {{ est.customer.email }}
+                </small>
+                <div>
+                  <a href="{% url 'estimates:detail' est.pk %}" class="btn btn-sm {% if est.status == 'pending' %}btn-fixora{% else %}btn-outline-secondary{% endif %}">
+                    {% if est.status == 'pending' %}
+                      <i class="bi bi-calculator me-1"></i> Submit Price Quote
+                    {% else %}
+                      View Quote Details &rarr;
+                    {% endif %}
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card card-fx border-0 text-center py-5 p-4">
+          <i class="bi bi-inbox text-muted mb-2" style="font-size: 3rem;"></i>
+          <h4 class="fw-bold">No estimate requests received</h4>
+          <p class="text-muted small col-md-7 mx-auto mb-3">
+            When customers request preliminary price quotes from your public profile, they will appear here for you to respond.
+          </p>
+          <div>
+            <a href="{% url 'providers:profile_edit' %}" class="btn btn-fixora btn-sm">
+              Optimize Profile to Attract Inquiries
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ provider.display_name }} - Home Service Pro on Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <!-- Profile Header Card -->
+  <div class="card card-fx border-0 p-4 p-md-5 mb-4 position-relative">
+    <!-- Favourite Button (US14) -->
+    {% if user.is_authenticated and user.is_customer %}
+      <a href="{% url 'discovery:toggle_favourite' provider.pk %}" class="btn-favourite {% if is_favourite %}is-favourited{% endif %}" title="{% if is_favourite %}Remove from favourites{% else %}Save to favourites{% endif %}">
+        <i class="bi {% if is_favourite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+      </a>
+    {% endif %}
+
+    <div class="row align-items-center g-4">
+      <!-- Avatar -->
+      <div class="col-md-auto text-center">
+        {% if provider.profile_picture %}
+          <img src="{{ provider.profile_picture.url }}" alt="{{ provider.display_name }}" class="provider-card-avatar" style="width: 110px; height: 110px;">
+        {% else %}
+          <div class="provider-card-avatar-placeholder mx-auto" style="width: 110px; height: 110px; font-size: 2.2rem;">
+            {{ provider.display_name|slice:":1"|upper }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Main Info -->
+      <div class="col-md">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <h2 class="fw-bold mb-0 text-dark">{{ provider.display_name }}</h2>
+          {% if provider.is_verified %}
+            <span class="badge badge-verified"><i class="bi bi-patch-check-fill me-1"></i> Verified Pro</span>
+          {% endif %}
+          {% if provider.is_online %}
+            <span class="badge badge-online"><i class="bi bi-circle-fill me-1" style="font-size: 6px;"></i> Available Online</span>
+          {% else %}
+            <span class="badge badge-offline"><i class="bi bi-circle-fill me-1" style="font-size: 6px;"></i> Currently Offline</span>
+          {% endif %}
+        </div>
+
+        <div class="text-muted small mb-2 d-flex flex-wrap gap-3">
+          <span><i class="bi bi-geo-alt text-success me-1"></i> {{ provider.city|default:"Location upon request" }}</span>
+          {% if provider.service_area %}
+            <span><i class="bi bi-compass text-primary me-1"></i> Area: {{ provider.service_area }}</span>
+          {% endif %}
+          <span><i class="bi bi-briefcase text-warning me-1"></i> {{ provider.experience_years }} years in trade</span>
+        </div>
+
+        <!-- Category Badges -->
+        <div class="d-flex flex-wrap gap-1 mt-2">
+          {% for cat in provider.categories.all %}
+            <a href="{% url 'discovery:category_providers' cat.slug %}" class="badge bg-light text-secondary border text-decoration-none py-1 px-2">
+              <i class="bi {{ cat.icon_class }} me-1 text-success"></i>{{ cat.name }}
+            </a>
+          {% empty %}
+            <span class="badge bg-light text-muted border">General Tradesperson</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Price & CTA Action -->
+      <div class="col-lg-3 text-lg-end border-start-lg ps-lg-4">
+        <div class="mb-3">
+          {% if provider.hourly_rate > 0 %}
+            <span class="text-muted small d-block">Hourly Rate</span>
+            <span class="fs-3 fw-bold text-dark">PKR {{ provider.hourly_rate }}</span><span class="text-muted">/hr</span>
+          {% elif provider.starting_price > 0 %}
+            <span class="text-muted small d-block">Starting from</span>
+            <span class="fs-3 fw-bold text-dark">PKR {{ provider.starting_price }}</span>
+          {% else %}
+            <span class="text-muted small d-block">Pricing</span>
+            <span class="fs-4 fw-bold text-dark">Custom Quote</span>
+          {% endif %}
+        </div>
+
+        <div class="d-grid gap-2">
+          {% if user.is_authenticated and user.is_customer %}
+            <a href="{% url 'estimates:request_create' provider.pk %}" class="btn btn-fixora">
+              <i class="bi bi-chat-quote me-1"></i> Request Price Estimate
+            </a>
+          {% elif not user.is_authenticated %}
+            <a href="{% url 'accounts:login' %}?next={% url 'estimates:request_create' provider.pk %}" class="btn btn-fixora">
+              <i class="bi bi-chat-quote me-1"></i> Request Price Estimate
+            </a>
+          {% endif %}
+          <a href="{% url 'availability:provider_calendar' provider.pk %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-calendar3 me-1"></i> View Live Availability
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Bio, Skills, Portfolio, Reviews -->
+    <div class="col-lg-8">
+      <!-- Introduction & Bio -->
+      <div class="card card-fx border-0 p-4 mb-4">
+        <h4 class="fw-bold mb-3">About {{ provider.display_name }}</h4>
+        {% if provider.introduction %}
+          <p class="text-secondary" style="white-space: pre-line; line-height: 1.7;">{{ provider.introduction }}</p>
+        {% else %}
+          <p class="text-muted fst-italic">This professional has not added a detailed biography yet.</p>
+        {% endif %}
+
+        {% if provider.skills %}
+          <h6 class="fw-bold text-dark mt-4 mb-2">Specialized Trade Skills</h6>
+          <div class="d-flex flex-wrap gap-2">
+            {% for skill in provider.skills.split %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle py-2 px-3 rounded-pill fw-normal">
+                <i class="bi bi-check2 me-1"></i> {{ skill|cut:"," }}
+              </span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Work Portfolio Gallery (US08) -->
+      <div class="card card-fx border-0 p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="fw-bold mb-0">Previous Work Portfolio</h4>
+          <span class="badge bg-light text-secondary border">{{ portfolio_photos.count }} photos</span>
+        </div>
+
+        {% if portfolio_photos %}
+          <div class="row g-3">
+            {% for photo in portfolio_photos %}
+              <div class="col-sm-6">
+                <div class="card border rounded-3 overflow-hidden shadow-sm h-100">
+                  <div style="height: 220px; overflow: hidden; background: #f8fafc;">
+                    <img src="{{ photo.image.url }}" alt="{{ photo.caption }}" class="w-100 h-100 object-fit-cover">
+                  </div>
+                  {% if photo.caption %}
+                    <div class="card-body p-2 bg-white">
+                      <small class="text-muted fw-semibold">{{ photo.caption }}</small>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-4 bg-light rounded-3">
+            <i class="bi bi-camera text-muted fs-2"></i>
+            <p class="text-muted small mt-2 mb-0">No previous project photos uploaded yet.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Ratings & Reviews Section (Empty state as per sprint scope) -->
+      <div class="card card-fx border-0 p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="fw-bold mb-0">Ratings & Reviews</h4>
+          <div class="d-flex align-items-center text-warning">
+            <i class="bi bi-star-fill me-1"></i>
+            <span class="fw-bold text-dark">{{ provider.rating }}</span>
+            <span class="text-muted small ms-1">({{ provider.review_count }} reviews)</span>
+          </div>
+        </div>
+
+        <!-- Sprint specification: show genuine empty state if no reviews exist rather than fabricated data -->
+        <div class="text-center py-5 bg-light rounded-3">
+          <i class="bi bi-chat-square-quote text-muted" style="font-size: 2.5rem;"></i>
+          <h6 class="fw-bold mt-2">No reviews recorded yet</h6>
+          <p class="text-muted small mb-3">
+            Be among the first customers to work with {{ provider.display_name }} on Fixora! Request an upfront price estimate to get started.
+          </p>
+          {% if user.is_authenticated and user.is_customer %}
+            <a href="{% url 'estimates:request_create' provider.pk %}" class="btn btn-fixora btn-sm">
+              Request Price Estimate
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Weekly Availability & Overview -->
+    <div class="col-lg-4">
+      <!-- Availability Preview Card (US17) -->
+      <div class="card card-fx border-0 p-4 mb-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-clock-history text-success me-2"></i> Weekly Schedule</h5>
+
+        {% if provider.is_online %}
+          <ul class="list-group list-group-flush small">
+            {% for d in days_data %}
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                <span class="fw-semibold">{{ d.day_name }}</span>
+                {% if d.is_working and d.start_time %}
+                  <span class="text-dark">{{ d.start_time|time:"g:i A" }} - {{ d.end_time|time:"g:i A" }}</span>
+                {% else %}
+                  <span class="text-muted">Unavailable</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+
+          <div class="d-grid mt-3">
+            <a href="{% url 'availability:provider_calendar' provider.pk %}" class="btn btn-outline-success btn-sm">
+              <i class="bi bi-calendar-check me-1"></i> Check Available Date Slots &rarr;
+            </a>
+          </div>
+        {% else %}
+          <div class="alert alert-secondary small mb-0">
+            <i class="bi bi-info-circle me-1"></i> This provider is currently offline and not accepting new appointments.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Verified Shield Card -->
+      <div class="card card-fx border-0 bg-light p-4">
+        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-check text-success me-1"></i> Fixora Guarantee</h6>
+        <ul class="list-unstyled small text-muted mb-0">
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-1"></i> Direct communication with verified pros</li>
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-1"></i> Transparent preliminary price estimates</li>
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-1"></i> Verified contact details on record</li>
+          <li><i class="bi bi-check-circle-fill text-success me-1"></i> No upfront booking commitment required</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

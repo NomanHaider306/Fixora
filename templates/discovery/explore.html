@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Explore All Home Services - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="text-center max-w-xl mx-auto mb-5">
+    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill fw-bold mb-2">Service Catalog</span>
+    <h1 class="fw-bold mb-2">Explore Home Services by Category</h1>
+    <p class="text-muted">Choose a trade category to discover qualified local professionals near you.</p>
+  </div>
+
+  <div class="row g-4">
+    {% for category in categories %}
+      <div class="col-sm-6 col-lg-4 col-xl-3">
+        <a href="{% url 'discovery:category_providers' category.slug %}" class="category-card h-100 p-4">
+          <div class="category-icon-wrapper" style="width: 72px; height: 72px; font-size: 2rem;">
+            <i class="bi {{ category.icon_class }}"></i>
+          </div>
+          <h5 class="fw-bold mb-2 text-dark">{{ category.name }}</h5>
+          <p class="text-muted small mb-3" style="min-height: 40px;">
+            {{ category.description|default:"Qualified local specialists for installation, repairs and maintenance."|truncatechars:85 }}
+          </p>
+          <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+            <span class="badge bg-light text-secondary border">
+              {{ category.provider_count }} registered pro{{ category.provider_count|pluralize }}
+            </span>
+            <span class="fw-semibold text-success small">Browse &rarr;</span>
+          </div>
+        </a>
+      </div>
+    {% empty %}
+      <div class="col-12 text-center py-5">
+        <p class="text-muted">No service categories are currently active.</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+

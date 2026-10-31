@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Saved Favourites - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+      <div class="card card-fx border-0 p-3 mb-3">
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 border-bottom">
+          <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.25rem;">
+            {{ user.first_name|default:user.email|slice:":1"|upper }}
+          </div>
+          <div class="text-truncate">
+            <h6 class="fw-bold mb-0 text-truncate">{{ user.get_full_name|default:user.username }}</h6>
+            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
+            <span class="badge bg-primary-subtle text-primary border mt-1">Customer Account</span>
+          </div>
+        </div>
+
+        <nav class="nav flex-column">
+          <a class="sidebar-nav-item" href="{% url 'accounts:customer_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard Overview
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'estimates:customer_list' %}">
+            <i class="bi bi-file-earmark-text"></i> My Estimates
+          </a>
+          <a class="sidebar-nav-item active" href="{% url 'discovery:favourites_list' %}">
+            <i class="bi bi-heart"></i> Saved Favourites
+            <span class="badge bg-danger text-white ms-auto">{{ favourites.count }}</span>
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'discovery:search' %}">
+            <i class="bi bi-search"></i> Find Professionals
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'accounts:account_settings' %}">
+            <i class="bi bi-gear"></i> Account Settings
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <div class="card card-fx border-0 p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h3 class="fw-bold mb-1">Your Saved Favourites (US14)</h3>
+            <p class="text-muted small mb-0">Quickly rehire or contact your preferred home service specialists.</p>
+          </div>
+          <a href="{% url 'discovery:search' %}" class="btn btn-fixora btn-sm">
+            <i class="bi bi-search me-1"></i> Discover More Pros
+          </a>
+        </div>
+      </div>
+
+      {% if favourites %}
+        <div class="row g-3">
+          {% for fav in favourites %}
+            <div class="col-md-6">
+              <div class="provider-card p-4 h-100 d-flex flex-column justify-content-between position-relative">
+                <!-- Remove Favourite Button -->
+                <a href="{% url 'discovery:toggle_favourite' fav.provider.pk %}" class="btn-favourite is-favourited" title="Remove from favourites">
+                  <i class="bi bi-heart-fill"></i>
+                </a>
+
+                <div>
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    {% if fav.provider.profile_picture %}
+                      <img src="{{ fav.provider.profile_picture.url }}" alt="{{ fav.provider.display_name }}" class="provider-card-avatar" style="width: 70px; height: 70px;">
+                    {% else %}
+                      <div class="provider-card-avatar-placeholder" style="width: 70px; height: 70px; font-size: 1.5rem;">
+                        {{ fav.provider.display_name|slice:":1"|upper }}
+                      </div>
+                    {% endif %}
+                    <div>
+                      <h5 class="fw-bold mb-0 text-dark">
+                        <a href="{% url 'providers:public_profile' fav.provider.pk %}" class="text-decoration-none text-dark">
+                          {{ fav.provider.display_name }}
+                        </a>
+                      </h5>
+                      <small class="text-muted d-block">
+                        <i class="bi bi-geo-alt text-success me-1"></i>{{ fav.provider.city|default:"Location upon request" }}
+                      </small>
+                      {% if fav.provider.is_online %}
+                        <span class="badge badge-online mt-1">Online</span>
+                      {% else %}
+                        <span class="badge badge-offline mt-1">Offline</span>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <p class="text-muted small mb-3 text-truncate-2">
+                    {{ fav.provider.introduction|default:"Experienced trade specialist."|truncatechars:100 }}
+                  </p>
+
+                  <div class="d-flex flex-wrap gap-1 mb-3">
+                    {% for cat in fav.provider.categories.all|slice:":3" %}
+                      <span class="badge bg-light text-secondary border small">{{ cat.name }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+                  <div>
+                    <small class="text-muted d-block">Rate</small>
+                    <strong class="text-dark">
+                      {% if fav.provider.hourly_rate > 0 %}PKR {{ fav.provider.hourly_rate }}/hr{% elif fav.provider.starting_price > 0 %}From PKR {{ fav.provider.starting_price }}{% else %}Custom Quote{% endif %}
+                    </strong>
+                  </div>
+                  <div class="d-flex gap-1">
+                    <a href="{% url 'providers:public_profile' fav.provider.pk %}" class="btn btn-outline-secondary btn-sm">
+                      Profile
+                    </a>
+                    <a href="{% url 'estimates:request_create' fav.provider.pk %}" class="btn btn-fixora btn-sm">
+                      Estimate
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card card-fx border-0 text-center py-5 p-4">
+          <i class="bi bi-heart text-muted mb-2" style="font-size: 3rem;"></i>
+          <h4 class="fw-bold">No saved favourites yet</h4>
+          <p class="text-muted small col-md-7 mx-auto mb-4">
+            When browsing search results or provider profiles, click the heart icon on any pro to save them here for quick future access.
+          </p>
+          <div>
+            <a href="{% url 'discovery:search' %}" class="btn btn-fixora">
+              Browse Home Service Pros &rarr;
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

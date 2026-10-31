@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Weekly Working Hours - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+      <div class="card card-fx border-0 p-3 mb-3">
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 border-bottom">
+          <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.25rem;">
+            {{ profile.display_name|slice:":1"|upper }}
+          </div>
+          <div class="text-truncate">
+            <h6 class="fw-bold mb-0 text-truncate">{{ profile.display_name }}</h6>
+            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
+            <span class="badge bg-success-subtle text-success border mt-1">Provider</span>
+          </div>
+        </div>
+
+        <nav class="nav flex-column">
+          <a class="sidebar-nav-item" href="{% url 'accounts:provider_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard Overview
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:profile_edit' %}">
+            <i class="bi bi-person-badge"></i> Edit Profile & Skills
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:portfolio_manage' %}">
+            <i class="bi bi-images"></i> Work Portfolio
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:document_submission' %}">
+            <i class="bi bi-shield-check"></i> Identity Documents
+          </a>
+          <a class="sidebar-nav-item active" href="{% url 'availability:weekly_schedule_manage' %}">
+            <i class="bi bi-clock"></i> Weekly Hours
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'availability:blocked_dates_manage' %}">
+            <i class="bi bi-calendar-x"></i> Block Dates
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'estimates:provider_list' %}">
+            <i class="bi bi-inbox"></i> Incoming Requests
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Schedule Form -->
+    <div class="col-lg-9">
+      <div class="card card-fx border-0 p-4 p-md-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+          <div>
+            <h3 class="fw-bold mb-1">Weekly Working Hours (US15)</h3>
+            <p class="text-muted small mb-0">Set your recurring working days and operating hours for each day of the week.</p>
+          </div>
+          <a href="{% url 'availability:provider_calendar' profile.pk %}" target="_blank" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-calendar3 me-1"></i> View Live Calendar
+          </a>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead class="table-light small">
+                <tr>
+                  <th style="width: 220px;">Day of the Week</th>
+                  <th style="width: 140px;">Availability</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sched in schedules %}
+                  <tr>
+                    <td>
+                      <strong class="d-block text-dark">{{ sched.get_day_of_week_display }}</strong>
+                    </td>
+                    <td>
+                      <div class="form-check form-switch">
+                        <input class="form-check-input working-toggle" type="checkbox" name="day_{{ sched.day_of_week }}_working" id="work_{{ sched.day_of_week }}" {% if sched.is_working %}checked{% endif %} data-day="{{ sched.day_of_week }}">
+                        <label class="form-check-label small fw-semibold" for="work_{{ sched.day_of_week }}" id="label_{{ sched.day_of_week }}">
+                          {% if sched.is_working %}Available{% else %}Off{% endif %}
+                        </label>
+                      </div>
+                    </td>
+                    <td>
+                      <input type="time" name="day_{{ sched.day_of_week }}_start" value="{{ sched.start_time|time:'H:i' }}" class="form-control form-control-sm time-field-{{ sched.day_of_week }}" style="max-width: 160px;" {% if not sched.is_working %}disabled{% endif %}>
+                    </td>
+                    <td>
+                      <input type="time" name="day_{{ sched.day_of_week }}_end" value="{{ sched.end_time|time:'H:i' }}" class="form-control form-control-sm time-field-{{ sched.day_of_week }}" style="max-width: 160px;" {% if not sched.is_working %}disabled{% endif %}>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-4">
+            <a href="{% url 'accounts:provider_dashboard' %}" class="btn btn-light px-4">Cancel</a>
+            <button type="submit" class="btn btn-fixora px-4">
+              <i class="bi bi-check-lg me-1"></i> Save Working Schedule
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.working-toggle').forEach(function(toggle) {
+  toggle.addEventListener('change', function() {
+    const day = this.getAttribute('data-day');
+    const label = document.getElementById('label_' + day);
+    const timeFields = document.querySelectorAll('.time-field-' + day);
+
+    if (this.checked) {
+      label.textContent = 'Available';
+      timeFields.forEach(f => f.removeAttribute('disabled'));
+    } else {
+      label.textContent = 'Off';
+      timeFields.forEach(f => f.setAttribute('disabled', 'disabled'));
+    }
+  });
+});
+</script>
+{% endblock %}
+

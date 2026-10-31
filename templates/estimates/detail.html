@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Estimate Request #{{ estimate.pk }} - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <!-- Breadcrumb / Back button -->
+      <div class="mb-3">
+        {% if is_customer %}
+          <a href="{% url 'estimates:customer_list' %}" class="small text-muted text-decoration-none">
+            <i class="bi bi-arrow-left me-1"></i> Back to My Estimates
+          </a>
+        {% elif is_provider %}
+          <a href="{% url 'estimates:provider_list' %}" class="small text-muted text-decoration-none">
+            <i class="bi bi-arrow-left me-1"></i> Back to Incoming Requests
+          </a>
+        {% else %}
+          <a href="{% url 'accounts:admin_dashboard' %}" class="small text-muted text-decoration-none">
+            <i class="bi bi-arrow-left me-1"></i> Back to Admin Dashboard
+          </a>
+        {% endif %}
+      </div>
+
+      <!-- Main Request Card -->
+      <div class="card card-fx border-0 p-4 p-md-5 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4 pb-3 border-bottom">
+          <div>
+            <span class="badge bg-light text-secondary border mb-2">
+              {{ estimate.service_category.name|default:"General Maintenance" }}
+            </span>
+            <h2 class="fw-bold mb-1">{{ estimate.title }}</h2>
+            <p class="text-muted small mb-0">
+              Submitted on {{ estimate.created_at|date:"F d, Y \a\t g:i A" }}
+            </p>
+          </div>
+
+          <!-- Status Badge -->
+          <div>
+            {% if estimate.status == 'pending' %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle py-2 px-3 rounded-pill fw-semibold">
+                <i class="bi bi-hourglass-split me-1"></i> Pending Provider Quote
+              </span>
+            {% elif estimate.status == 'responded' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle py-2 px-3 rounded-pill fw-semibold">
+                <i class="bi bi-check-circle-fill me-1"></i> Responded
+              </span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary py-2 px-3 rounded-pill">
+                Cancelled
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Participants Summary -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded-3 border">
+              <span class="text-muted small fw-semibold d-block mb-1">Customer / Homeowner</span>
+              <h6 class="fw-bold mb-0 text-dark">{{ estimate.customer.get_full_name|default:estimate.customer.username }}</h6>
+              <small class="text-muted">{{ estimate.customer.email }}</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 bg-light rounded-3 border">
+              <span class="text-muted small fw-semibold d-block mb-1">Service Provider</span>
+              <h6 class="fw-bold mb-0 text-dark">
+                <a href="{% url 'providers:public_profile' estimate.provider.pk %}" class="text-decoration-none text-dark">
+                  {{ estimate.provider.display_name }}
+                </a>
+              </h6>
+              <small class="text-muted">{{ estimate.provider.user.email }}</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Job Details -->
+        <h5 class="fw-bold mb-3 text-secondary">Job Description & Specifications</h5>
+        <div class="p-3 bg-white rounded-3 border mb-4">
+          <p class="text-dark mb-0" style="white-space: pre-line; line-height: 1.7;">{{ estimate.description }}</p>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">Preferred Service Date</span>
+            <strong class="text-dark">{{ estimate.preferred_date|default:"Flexible / To be coordinated" }}</strong>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">Job Location / Address</span>
+            <strong class="text-dark">{{ estimate.job_address|default:"Provided upon confirmation" }}</strong>
+          </div>
+        </div>
+
+        {% if is_customer and estimate.status == 'pending' %}
+          <div class="pt-3 border-top text-end">
+            <form method="post" action="{% url 'estimates:request_cancel' estimate.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancel this estimate request?');">
+                <i class="bi bi-x-circle me-1"></i> Cancel Request
+              </button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Response Section (If Responded) -->
+      {% if estimate.status == 'responded' and estimate.response %}
+        <div class="card card-fx border-0 p-4 p-md-5 mb-4 bg-success-subtle border-success-subtle">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <span class="badge bg-success text-white px-3 py-1 rounded-pill mb-1">Provider's Estimate</span>
+              <h3 class="fw-bold text-success mb-0">Estimated Price: PKR {{ estimate.response.estimated_price }}</h3>
+            </div>
+            <small class="text-muted">
+              Responded on {{ estimate.response.responded_at|date:"M d, Y" }}
+            </small>
+          </div>
+
+          <div class="p-3 bg-white rounded-3 border mb-3">
+            <span class="text-muted small fw-semibold d-block mb-1">Explanation & Cost Breakdown:</span>
+            <p class="mb-0 text-dark" style="white-space: pre-line;">{{ estimate.response.explanation|default:"No additional notes provided." }}</p>
+          </div>
+
+          {% if estimate.response.valid_until %}
+            <small class="text-muted">
+              <i class="bi bi-calendar-event me-1"></i> This estimate quote is valid until <strong>{{ estimate.response.valid_until|date:"F d, Y" }}</strong>.
+            </small>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <!-- Provider Submit Response Form (If Provider & Pending) -->
+      {% if is_provider and estimate.status == 'pending' and response_form %}
+        <div class="card card-fx border-0 p-4 p-md-5">
+          <h4 class="fw-bold mb-1">Submit Preliminary Price Estimate</h4>
+          <p class="text-muted small mb-4">Provide the customer with an upfront price estimate and explanation breakdown for the requested job.</p>
+
+          <form method="post" action="{% url 'estimates:respond' estimate.pk %}" novalidate>
+            {% csrf_token %}
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Estimated Total Price (PKR) <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text">PKR</span>
+                  {{ response_form.estimated_price }}
+                </div>
+                {% if response_form.estimated_price.errors %}
+                  <div class="text-danger small mt-1">{{ response_form.estimated_price.errors.0 }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Quote Valid Until</label>
+                {{ response_form.valid_until }}
+                {% if response_form.valid_until.errors %}
+                  <div class="text-danger small mt-1">{{ response_form.valid_until.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold small">Explanation / Cost Breakdown</label>
+              {{ response_form.explanation }}
+              {% if response_form.explanation.errors %}
+                <div class="text-danger small mt-1">{{ response_form.explanation.errors.0 }}</div>
+              {% endif %}
+              <small class="text-muted">Specify labor vs parts, estimated hours, or any prerequisites needed before starting the job.</small>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+              <a href="{% url 'estimates:provider_list' %}" class="btn btn-light px-4">Cancel</a>
+              <button type="submit" class="btn btn-fixora px-4">
+                <i class="bi bi-send me-1"></i> Send Estimate Response
+              </button>
+            </div>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

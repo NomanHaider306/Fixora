@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}My Price Estimates - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+      <div class="card card-fx border-0 p-3 mb-3">
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 border-bottom">
+          <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.25rem;">
+            {{ user.first_name|default:user.email|slice:":1"|upper }}
+          </div>
+          <div class="text-truncate">
+            <h6 class="fw-bold mb-0 text-truncate">{{ user.get_full_name|default:user.username }}</h6>
+            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
+            <span class="badge bg-primary-subtle text-primary border mt-1">Customer Account</span>
+          </div>
+        </div>
+
+        <nav class="nav flex-column">
+          <a class="sidebar-nav-item" href="{% url 'accounts:customer_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard Overview
+          </a>
+          <a class="sidebar-nav-item active" href="{% url 'estimates:customer_list' %}">
+            <i class="bi bi-file-earmark-text"></i> My Estimates
+            <span class="badge bg-primary text-white ms-auto">{{ estimates.count }}</span>
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'discovery:favourites_list' %}">
+            <i class="bi bi-heart"></i> Saved Favourites
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'discovery:search' %}">
+            <i class="bi bi-search"></i> Find Professionals
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'accounts:account_settings' %}">
+            <i class="bi bi-gear"></i> Account Settings
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <div class="card card-fx border-0 p-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div>
+            <h3 class="fw-bold mb-1">My Price Estimates (US24)</h3>
+            <p class="text-muted small mb-0">Track responses, prices, and status for all your preliminary price inquiries.</p>
+          </div>
+          <a href="{% url 'discovery:search' %}" class="btn btn-fixora btn-sm">
+            <i class="bi bi-search me-1"></i> Request Another Estimate
+          </a>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+          <a href="{% url 'estimates:customer_list' %}" class="btn btn-sm {% if not status_filter %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            All ({{ estimates.count }})
+          </a>
+          <a href="{% url 'estimates:customer_list' %}?status=pending" class="btn btn-sm {% if status_filter == 'pending' %}btn-warning text-dark{% else %}btn-outline-secondary{% endif %}">
+            Pending
+          </a>
+          <a href="{% url 'estimates:customer_list' %}?status=responded" class="btn btn-sm {% if status_filter == 'responded' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+            Responded
+          </a>
+          <a href="{% url 'estimates:customer_list' %}?status=cancelled" class="btn btn-sm {% if status_filter == 'cancelled' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+            Cancelled
+          </a>
+        </div>
+      </div>
+
+      <!-- Requests Cards -->
+      {% if estimates %}
+        <div class="d-flex flex-column gap-3">
+          {% for est in estimates %}
+            <div class="card card-fx border-0 p-4">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                  <span class="badge bg-light text-secondary border mb-1">
+                    {{ est.service_category.name|default:"General Maintenance" }}
+                  </span>
+                  <h5 class="fw-bold mb-0">
+                    <a href="{% url 'estimates:detail' est.pk %}" class="text-dark text-decoration-none">
+                      {{ est.title }}
+                    </a>
+                  </h5>
+                  <small class="text-muted">
+                    Sent to: <a href="{% url 'providers:public_profile' est.provider.pk %}" class="fw-semibold text-success text-decoration-none">{{ est.provider.display_name }}</a> &bull;
+                    Date requested: {{ est.created_at|date:"M d, Y" }}
+                  </small>
+                </div>
+
+                <!-- Status Badge -->
+                <div>
+                  {% if est.status == 'pending' %}
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle py-2 px-3 rounded-pill fw-semibold">
+                      <i class="bi bi-hourglass-split me-1"></i> Awaiting Provider Quote
+                    </span>
+                  {% elif est.status == 'responded' %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle py-2 px-3 rounded-pill fw-semibold">
+                      <i class="bi bi-check-circle-fill me-1"></i> Quote Received
+                    </span>
+                  {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary py-2 px-3 rounded-pill">
+                      Cancelled
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <p class="text-secondary small mb-3">
+                {{ est.description }}
+              </p>
+
+              <!-- If Responded: Show Quote Summary -->
+              {% if est.status == 'responded' and est.response %}
+                <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle mb-3">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <strong class="text-success small">Provider's Estimated Price:</strong>
+                    <span class="fs-4 fw-bold text-success">PKR {{ est.response.estimated_price }}</span>
+                  </div>
+                  {% if est.response.explanation %}
+                    <p class="small text-muted mb-0 fst-italic">"{{ est.response.explanation }}"</p>
+                  {% endif %}
+                  {% if est.response.valid_until %}
+                    <small class="text-muted d-block mt-1">Valid until: {{ est.response.valid_until|date:"M d, Y" }}</small>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <small class="text-muted">
+                  {% if est.job_address %}<i class="bi bi-geo-alt me-1"></i>{{ est.job_address }}{% endif %}
+                </small>
+                <div class="d-flex gap-2">
+                  {% if est.status == 'pending' %}
+                    <form method="post" action="{% url 'estimates:request_cancel' est.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this estimate request?');">
+                        Cancel Request
+                      </button>
+                    </form>
+                  {% endif %}
+                  <a href="{% url 'estimates:detail' est.pk %}" class="btn btn-sm btn-fixora-outline">
+                    View Full Details &rarr;
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card card-fx border-0 text-center py-5 p-4">
+          <i class="bi bi-file-earmark-text text-muted mb-2" style="font-size: 3rem;"></i>
+          <h4 class="fw-bold">No estimate requests found</h4>
+          <p class="text-muted small col-md-7 mx-auto mb-4">
+            Browse through home service pros and click "Request Price Estimate" on their profile to get upfront quotes.
+          </p>
+          <div>
+            <a href="{% url 'discovery:search' %}" class="btn btn-fixora">
+              Browse Home Service Pros &rarr;
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

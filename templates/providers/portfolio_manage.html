@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Portfolio Photos - Fixora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+      <div class="card card-fx border-0 p-3 mb-3">
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 border-bottom">
+          <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-weight: 700; font-size: 1.25rem;">
+            {{ profile.display_name|slice:":1"|upper }}
+          </div>
+          <div class="text-truncate">
+            <h6 class="fw-bold mb-0 text-truncate">{{ profile.display_name }}</h6>
+            <small class="text-muted d-block text-truncate">{{ user.email }}</small>
+            <span class="badge bg-success-subtle text-success border mt-1">Provider</span>
+          </div>
+        </div>
+
+        <nav class="nav flex-column">
+          <a class="sidebar-nav-item" href="{% url 'accounts:provider_dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Dashboard Overview
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:profile_edit' %}">
+            <i class="bi bi-person-badge"></i> Edit Profile & Skills
+          </a>
+          <a class="sidebar-nav-item active" href="{% url 'providers:portfolio_manage' %}">
+            <i class="bi bi-images"></i> Work Portfolio
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'providers:document_submission' %}">
+            <i class="bi bi-shield-check"></i> Identity Documents
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'availability:weekly_schedule_manage' %}">
+            <i class="bi bi-clock"></i> Weekly Hours
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'availability:blocked_dates_manage' %}">
+            <i class="bi bi-calendar-x"></i> Block Dates
+          </a>
+          <a class="sidebar-nav-item" href="{% url 'estimates:provider_list' %}">
+            <i class="bi bi-inbox"></i> Incoming Requests
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-lg-9">
+      <!-- Upload New Photo Form -->
+      <div class="card card-fx border-0 p-4 mb-4">
+        <h4 class="fw-bold mb-1">Project Portfolio Gallery (US08)</h4>
+        <p class="text-muted small mb-4">Upload high-resolution photos of past jobs to showcase the quality of your craftsmanship.</p>
+
+        <form method="post" enctype="multipart/form-data" novalidate class="p-3 bg-light rounded-3 border mb-2">
+          {% csrf_token %}
+          <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+              <label class="form-label fw-semibold small">Choose Work Photo <span class="text-danger">*</span></label>
+              {{ form.image }}
+              {% if form.image.errors %}
+                <div class="text-danger small mt-1">{{ form.image.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-5">
+              <label class="form-label fw-semibold small">Caption or Job Description</label>
+              {{ form.caption }}
+              {% if form.caption.errors %}
+                <div class="text-danger small mt-1">{{ form.caption.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-fixora w-100">
+                <i class="bi bi-upload me-1"></i> Upload
+              </button>
+            </div>
+          </div>
+          <small class="text-muted d-block mt-2">
+            Max file size: 5MB. Formats accepted: JPG, JPEG, PNG, WEBP.
+          </small>
+        </form>
+      </div>
+
+      <!-- Photos Gallery Grid -->
+      <div class="card card-fx border-0 p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Your Uploaded Photos ({{ photos.count }})</h5>
+          <a href="{% url 'providers:public_profile' profile.pk %}" target="_blank" class="small text-success fw-bold text-decoration-none">
+            Preview on public profile &rarr;
+          </a>
+        </div>
+
+        {% if photos %}
+          <div class="row g-3">
+            {% for photo in photos %}
+              <div class="col-sm-6 col-md-4">
+                <div class="card border rounded-3 overflow-hidden shadow-sm h-100">
+                  <div style="height: 180px; overflow: hidden; background: #f1f5f9;">
+                    <img src="{{ photo.image.url }}" alt="{{ photo.caption }}" class="w-100 h-100 object-fit-cover">
+                  </div>
+                  <div class="card-body p-3 d-flex flex-column justify-content-between">
+                    <div>
+                      <p class="small fw-semibold text-dark mb-1 text-truncate">
+                        {{ photo.caption|default:"Work Sample" }}
+                      </p>
+                      <small class="text-muted d-block">{{ photo.uploaded_at|date:"M d, Y" }}</small>
+                    </div>
+                    <form method="post" action="{% url 'providers:portfolio_delete' photo.pk %}" class="mt-2 text-end">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this photo from your portfolio?');">
+                        <i class="bi bi-trash me-1"></i> Remove
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-5 bg-light rounded-3">
+            <i class="bi bi-images text-muted" style="font-size: 3rem;"></i>
+            <h6 class="fw-bold mt-2">No photos uploaded yet</h6>
+            <p class="text-muted small mb-0">Pros with 3 or more portfolio photos receive up to 4x more estimate requests!</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

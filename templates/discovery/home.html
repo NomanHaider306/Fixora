@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+
+{% block title %}Fixora - Find Top-Rated Local Home Service Pros{% endblock %}
+
+{% block content %}
+<!-- 4 & 5. Hero Section with Prominent Search Interface -->
+<section class="hero-section">
+  <div class="container">
+    <div class="row justify-content-center text-center">
+      <div class="col-lg-9">
+        <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill fw-bold mb-3">
+          <i class="bi bi-stars me-1"></i> The Modern Home Services Marketplace
+        </span>
+        <h1 class="display-4 fw-extrabold text-dark mb-3" style="letter-spacing: -1px; font-weight: 800;">
+          Find trusted local professionals for any home project.
+        </h1>
+        <p class="lead text-secondary mb-4 col-md-10 mx-auto">
+          From licensed electricians and emergency plumbers to carpenters, painters, and general maintenance specialists — compare verified pros, check live schedules, and request preliminary price estimates.
+        </p>
+
+        <!-- Prominent Search Bar (US12) -->
+        <div class="hero-search-box p-3 shadow-lg mx-auto text-start">
+          <form action="{% url 'discovery:search' %}" method="get" class="row g-2 align-items-center">
+            <div class="col-md-5">
+              <div class="input-group">
+                <span class="input-group-text bg-white border-0"><i class="bi bi-search text-success fs-5"></i></span>
+                <input type="text" name="q" class="form-control border-0 ps-1" placeholder="What service do you need? (e.g. Electrician, Plumbing)">
+              </div>
+            </div>
+            <div class="col-md-4 border-start-md">
+              <div class="input-group">
+                <span class="input-group-text bg-white border-0"><i class="bi bi-geo-alt text-primary fs-5"></i></span>
+                <input type="text" name="location" class="form-control border-0 ps-1" placeholder="City or area (e.g. Lahore, Karachi, Islamabad)">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <button type="submit" class="btn btn-fixora w-100 py-2 fs-6">
+                Search Pros &rarr;
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Quick Trending Tags -->
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 mt-4 text-muted small">
+          <span class="fw-semibold">Popular Searches:</span>
+          <a href="{% url 'discovery:search' %}?q=Electrician" class="badge bg-white text-secondary border text-decoration-none py-2 px-3 rounded-pill">Electrician</a>
+          <a href="{% url 'discovery:search' %}?q=Plumber" class="badge bg-white text-secondary border text-decoration-none py-2 px-3 rounded-pill">Plumbing</a>
+          <a href="{% url 'discovery:search' %}?q=Carpenter" class="badge bg-white text-secondary border text-decoration-none py-2 px-3 rounded-pill">Carpentry</a>
+          <a href="{% url 'discovery:search' %}?q=Painter" class="badge bg-white text-secondary border text-decoration-none py-2 px-3 rounded-pill">Painting</a>
+          <a href="{% url 'discovery:search' %}?q=Steel" class="badge bg-white text-secondary border text-decoration-none py-2 px-3 rounded-pill">Steel Work</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Popular Service Categories -->
+<section class="py-5 bg-white">
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <span class="text-success fw-bold text-uppercase small tracking-wide">Explore Categories</span>
+        <h2 class="fw-bold mb-0">Popular Home Services</h2>
+      </div>
+      <a href="{% url 'discovery:explore' %}" class="fw-bold text-success text-decoration-none">
+        View All Categories &rarr;
+      </a>
+    </div>
+
+    <div class="row g-3">
+      {% for category in categories %}
+        <div class="col-6 col-md-4 col-lg-3">
+          <a href="{% url 'discovery:category_providers' category.slug %}" class="category-card h-100">
+            <div class="category-icon-wrapper">
+              <i class="bi {{ category.icon_class }}"></i>
+            </div>
+            <h6 class="fw-bold mb-1 text-dark">{{ category.name }}</h6>
+            <small class="text-muted">{{ category.active_provider_count }} active pros</small>
+          </a>
+        </div>
+      {% empty %}
+        <div class="col-12 text-center py-4">
+          <p class="text-muted">Service categories are being set up by administrators.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- 7. Featured Service Providers -->
+<section class="py-5" style="background-color: #f8fafc;">
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <span class="text-success fw-bold text-uppercase small">Top Rated</span>
+        <h2 class="fw-bold mb-0">Featured Service Professionals</h2>
+      </div>
+      <a href="{% url 'discovery:search' %}" class="fw-bold text-success text-decoration-none">
+        Browse All Pros &rarr;
+      </a>
+    </div>
+
+    <div class="row g-4">
+      {% for provider in featured_providers %}
+        <div class="col-md-6 col-lg-4">
+          <div class="provider-card p-4 h-100 d-flex flex-column justify-content-between">
+            <!-- Favourite Toggle (US14) -->
+            {% if user.is_authenticated and user.is_customer %}
+              <a href="{% url 'discovery:toggle_favourite' provider.pk %}" class="btn-favourite {% if provider.pk in user_fav_ids %}is-favourited{% endif %}" title="Toggle Favourite">
+                <i class="bi {% if provider.pk in user_fav_ids %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+              </a>
+            {% endif %}
+
+            <div>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                {% if provider.profile_picture %}
+                  <img src="{{ provider.profile_picture.url }}" alt="{{ provider.display_name }}" class="provider-card-avatar">
+                {% else %}
+                  <div class="provider-card-avatar-placeholder">
+                    {{ provider.display_name|slice:":1"|upper }}
+                  </div>
+                {% endif %}
+                <div>
+                  <h5 class="fw-bold mb-0 text-dark">{{ provider.display_name }}</h5>
+                  <small class="text-muted d-block">
+                    <i class="bi bi-geo-alt text-success me-1"></i>{{ provider.city|default:"Location upon request" }}
+                  </small>
+                  {% if provider.is_verified %}
+                    <span class="badge badge-verified mt-1"><i class="bi bi-patch-check-fill me-1"></i> Verified</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <p class="text-muted small mb-3 text-truncate-2" style="min-height: 40px;">
+                {{ provider.introduction|default:"Experienced trade professional dedicated to high quality home maintenance and installations."|truncatechars:100 }}
+              </p>
+
+              <!-- Categories -->
+              <div class="d-flex flex-wrap gap-1 mb-3">
+                {% for cat in provider.categories.all|slice:":3" %}
+                  <span class="badge bg-light text-secondary border small">{{ cat.name }}</span>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+              <div>
+                <small class="text-muted d-block">Rate</small>
+                <strong class="text-dark">
+                  {% if provider.hourly_rate > 0 %}PKR {{ provider.hourly_rate }}/hr{% elif provider.starting_price > 0 %}From PKR {{ provider.starting_price }}{% else %}Custom{% endif %}
+                </strong>
+              </div>
+              <a href="{% url 'providers:public_profile' provider.pk %}" class="btn btn-fixora-outline btn-sm">
+                View Profile &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12 text-center py-5 bg-white rounded-3 border">
+          <p class="text-muted mb-2">No service providers available right now.</p>
+          <a href="{% url 'accounts:register' %}?role=provider" class="btn btn-fixora btn-sm">Join as the First Pro</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- 8. How Fixora Works -->
+<section class="py-5 bg-white" id="how-it-works">
+  <div class="container py-4">
+    <div class="text-center max-w-xl mx-auto mb-5">
+      <span class="text-success fw-bold text-uppercase small">Simple & Seamless</span>
+      <h2 class="fw-bold mb-2">How Fixora Works</h2>
+      <p class="text-muted">Get your home repairs and installations completed in three easy steps.</p>
+    </div>
+
+    <div class="row g-4 text-center">
+      <div class="col-md-4">
+        <div class="p-4 rounded-3 h-100">
+          <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px; font-size: 2rem;">
+            <i class="bi bi-search"></i>
+          </div>
+          <h5 class="fw-bold mb-2">1. Search & Filter</h5>
+          <p class="text-muted small">
+            Enter your service requirement and city. Filter providers by hourly rates, experience, ratings, and live availability.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="p-4 rounded-3 h-100">
+          <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px; font-size: 2rem;">
+            <i class="bi bi-chat-quote"></i>
+          </div>
+          <h5 class="fw-bold mb-2">2. Request Price Estimate</h5>
+          <p class="text-muted small">
+            Describe your job and preferred timeline. Receive upfront preliminary price estimates directly from tradespeople before committing.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="p-4 rounded-3 h-100">
+          <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px; font-size: 2rem;">
+            <i class="bi bi-check2-circle"></i>
+          </div>
+          <h5 class="fw-bold mb-2">3. Book with Confidence</h5>
+          <p class="text-muted small">
+            Check the provider's verified credentials, examine work portfolio galleries, and book available schedule slots.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. Benefits of Verified Professionals -->
+<section class="py-5" style="background-color: #0f172a; color: white;">
+  <div class="container py-4">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <span class="badge bg-success text-white px-3 py-2 rounded-pill fw-bold mb-3">
+          <i class="bi bi-patch-check-fill me-1"></i> Quality & Trust
+        </span>
+        <h2 class="display-6 fw-bold mb-3">Why hire verified tradespeople on Fixora?</h2>
+        <p class="text-secondary mb-4">
+          Unlicensed and roadside contacts often lead to unpredictable workmanship, no accountability, and unfair billing. Fixora changes that by holding professionals to verifiable standards.
+        </p>
+
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <i class="bi bi-shield-check text-success fs-3"></i>
+          <div>
+            <h6 class="fw-bold mb-1 text-white">Identity & Credentials Checked</h6>
+            <p class="text-secondary small mb-0">Service providers submit national identity cards, vocational licenses, and certifications for platform verification.</p>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-start gap-3 mb-3">
+          <i class="bi bi-calendar-check text-success fs-3"></i>
+          <div>
+            <h6 class="fw-bold mb-1 text-white">Real-Time Available Working Hours</h6>
+            <p class="text-secondary small mb-0">See exact weekly working hours and blocked absence dates so you only book when the professional is actually ready to work.</p>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-start gap-3">
+          <i class="bi bi-cash-coin text-success fs-3"></i>
+          <div>
+            <h6 class="fw-bold mb-1 text-white">Zero Hidden Charges</h6>
+            <p class="text-secondary small mb-0">Clear starting prices and transparent preliminary price estimates eliminate unexpected surprise invoices.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="p-4 p-md-5 rounded-4 border border-secondary" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);">
+          <h4 class="fw-bold text-white mb-3">Fixora Platform Integrity</h4>
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="p-3 bg-dark rounded-3 border border-secondary">
+                <h3 class="fw-bold text-success mb-1">100%</h3>
+                <small class="text-secondary">Authentic Profiles</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 bg-dark rounded-3 border border-secondary">
+                <h3 class="fw-bold text-info mb-1">7 Days</h3>
+                <small class="text-secondary">Schedule Transparency</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 bg-dark rounded-3 border border-secondary">
+                <h3 class="fw-bold text-warning mb-1">Upfront</h3>
+                <small class="text-secondary">Price Estimates</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 bg-dark rounded-3 border border-secondary">
+                <h3 class="fw-bold text-primary mb-1">Direct</h3>
+                <small class="text-secondary">Customer Contact</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. Call to Action: Join as a Service Provider -->
+<section class="py-5 bg-white">
+  <div class="container py-4">
+    <div class="card card-fx border-0 overflow-hidden" style="background: linear-gradient(135deg, #004c3f, #008060); color: white;">
+      <div class="card-body p-4 p-md-5">
+        <div class="row align-items-center g-4">
+          <div class="col-lg-8">
+            <span class="badge bg-white text-success px-3 py-2 rounded-pill fw-bold mb-3">
+              For Tradespeople & Home Pros
+            </span>
+            <h2 class="display-6 fw-bold mb-2 text-white">Are you a skilled tradesperson?</h2>
+            <p class="lead mb-0 text-white-50">
+              Grow your client base with Fixora. Create your professional profile, showcase previous work photos, manage your weekly working hours, and receive customer estimate requests.
+            </p>
+          </div>
+          <div class="col-lg-4 text-lg-end">
+            <a href="{% url 'accounts:register' %}?role=provider" class="btn btn-light btn-lg px-4 fw-bold text-success shadow">
+              Register as a Pro &rarr;
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
